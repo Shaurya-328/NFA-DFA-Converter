@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automata Theory Toolkit</title>
+  <link rel="shortcut icon" href="images/fevicon-logo.png" type="image/x-icon">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Cursor glow */
+    .cursor-glow {
+      position: fixed;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 0;
+      transition: opacity 0.3s;
+    }
+    /* Floating orb decorations */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(60px);
+    }
+    .orb-1 {
+      width: 400px; height: 400px;
+      top: -100px; right: -100px;
+      background: rgba(124,58,237,0.08);
+      animation: orbFloat1 8s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 300px; height: 300px;
+      bottom: 0; left: -80px;
+      background: rgba(0,212,255,0.06);
+      animation: orbFloat2 10s ease-in-out infinite;
+    }
+    @keyframes orbFloat1 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50%      { transform: translate(-30px, 40px) scale(1.1); }
+    }
+    @keyframes orbFloat2 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50%      { transform: translate(20px, -30px) scale(1.08); }
+    }
+    /* Count-up badge on card */
+    .card-stat {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: var(--text-muted);
+      opacity: 0.5;
+      letter-spacing: 1px;
+      transition: opacity 0.3s;
+    }
+    .card:hover .card-stat { opacity: 1; }
+  </style>
+</head>
+<body>
+  <script src="theme.js"></script>
+
+  <!-- Ambient orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <!-- Cursor glow -->
+  <div class="cursor-glow" id="cursorGlow"></div>
+
+  <!-- Particle canvas background -->
+  <canvas id="particleCanvas" style="position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.35;"></canvas>
+
+  <div class="homepage-wrapper">
+
+    <h1>Automata Theory Toolkit</h1>
+    <p class="homepage-subtitle">Select a tool to get started</p>
+
+    <div class="cards stagger">
+
+      <div class="card reveal" data-type="learn" onclick="navigateTo('theory.html')">
+        <span class="card-badge">Learn</span>
+        <div class="icon">📘</div>
+        <h3>Theory</h3>
+        <p>Learn the basics of DFA, NFA and Automata Theory</p>
+        <span class="card-stat">FOUNDATIONS</span>
+      </div>
+
+      <div class="card reveal" data-type="visual" onclick="navigateTo('nfa-visual.html')">
+        <span class="card-badge">Visual</span>
+        <div class="icon">🔵</div>
+        <h3>NFA Visualizer</h3>
+        <p>Create and visualize Non-Deterministic Finite Automata</p>
+        <span class="card-stat">INTERACTIVE</span>
+      </div>
+
+      <div class="card reveal" data-type="convert" onclick="navigateTo('nfa-dfa.html')">
+        <span class="card-badge">Convert</span>
+        <div class="icon">🔄</div>
+        <h3>NFA → DFA Converter</h3>
+        <p>Convert NFA to DFA using subset construction algorithm</p>
+        <span class="card-stat">SUBSET CONSTRUCTION</span>
+      </div>
+
+      <div class="card reveal" data-type="visual" onclick="navigateTo('dfa-visual.html')">
+        <span class="card-badge">Visual</span>
+        <div class="icon">⚙️</div>
+        <h3>DFA Visualizer</h3>
+        <p>Create and visualize Deterministic Finite Automata</p>
+        <span class="card-stat">DETERMINISTIC</span>
+      </div>
+
+      <div class="card reveal" data-type="table" onclick="navigateTo('nfa-table.html')">
+        <span class="card-badge">Table</span>
+        <div class="icon">📊</div>
+        <h3>NFA → Table</h3>
+        <p>Generate NFA transition table from your automaton</p>
+        <span class="card-stat">TRANSITION TABLE</span>
+      </div>
+
+      <div class="card reveal" data-type="table" onclick="navigateTo('dfa-table.html')">
+        <span class="card-badge">Table</span>
+        <div class="icon">📋</div>
+        <h3>DFA → Table</h3>
+        <p>Generate DFA transition table from your automaton</p>
+        <span class="card-stat">TRANSITION TABLE</span>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+  /* ── Cursor glow follow ── */
+  const glow = document.getElementById('cursorGlow');
+  document.addEventListener('mousemove', e => {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top  = e.clientY + 'px';
+  });
+
+  /* ── Page navigation with fade-out ── */
+  function navigateTo(url) {
+    document.body.style.transition = 'opacity 0.3s ease';
+    document.body.style.opacity = '0';
+    setTimeout(() => { location.href = url; }, 300);
+  }
+
+  /* ── Particle canvas ── */
+  (function() {
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles;
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    function initParticles() {
+      particles = Array.from({ length: 70 }, () => ({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: Math.random() * 1.8 + 0.4,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        alpha: Math.random() * 0.5 + 0.2
+      }));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const isLight = document.body.classList.contains('light');
+      const col = isLight ? '0,119,204' : '0,212,255';
+
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < 140) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(${col},${0.14 * (1 - dist/140)})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
+      }
+
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${col},${p.alpha})`;
+        ctx.fill();
+      });
+
+      requestAnimationFrame(draw);
+    }
+
+    resize();
+    initParticles();
+    draw();
+    window.addEventListener('resize', () => { resize(); initParticles(); });
+  })();
+
+  /* ── Scroll reveal observer ── */
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  /* ── Card stagger entrance ── */
+  document.querySelectorAll('.card').forEach((card, i) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(28px) scale(0.97)';
+    card.style.transition = 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1), border-color 0.35s, box-shadow 0.35s';
+    setTimeout(() => {
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0) scale(1)';
+    }, 120 + i * 90);
+  });
+
+  /* ── Card tilt on mousemove (3D) ── */
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width  - 0.5;
+      const y = (e.clientY - rect.top)  / rect.height - 0.5;
+      card.style.transform = `translateY(-10px) scale(1.025) rotateX(${-y * 8}deg) rotateY(${x * 8}deg)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = 'translateY(0) scale(1) rotateX(0) rotateY(0)';
+      card.style.transition = 'transform 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.55s, border-color 0.35s, box-shadow 0.35s';
+    });
+    card.addEventListener('mouseenter', () => {
+      card.style.transition = 'transform 0.15s ease, border-color 0.35s, box-shadow 0.35s';
+    });
+  });
+
+  /* ── Page fade in ── */
+  document.body.style.opacity = '0';
+  requestAnimationFrame(() => {
+    document.body.style.transition = 'opacity 0.4s ease';
+    document.body.style.opacity = '1';
+  });
+  </script>
+</body>
+</html>

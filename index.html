@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFA → DFA Visualizer</title>
+  <link rel="shortcut icon" href="images/fevicon-logo.png" type="image/x-icon">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Enhanced splash particles */
+    .splash-particles { position:fixed; inset:0; pointer-events:none; z-index:0; }
+    /* Glitch effect on title */
+    .title-glitch {
+      position: relative;
+      display: inline-block;
+    }
+    .title-glitch::before, .title-glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #fff, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .title-glitch::before {
+      animation: glitch1 4s infinite;
+      clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+      transform: translateX(-2px);
+      opacity: 0;
+    }
+    .title-glitch::after {
+      animation: glitch2 4s infinite;
+      clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+      transform: translateX(2px);
+      opacity: 0;
+    }
+    @keyframes glitch1 {
+      0%,90%,100% { opacity:0; transform:translateX(-2px); }
+      91%,95%     { opacity:0.5; transform:translateX(-4px); }
+    }
+    @keyframes glitch2 {
+      0%,90%,100% { opacity:0; transform:translateX(2px); }
+      93%,97%     { opacity:0.4; transform:translateX(4px); }
+    }
+    /* Ring animation around logo */
+    .logo-ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      border: 1px solid rgba(0,212,255,0.3);
+      border-radius: 50%;
+      animation: ringPulse 2s ease-out infinite;
+      pointer-events: none;
+    }
+    .logo-wrapper { position: relative; display: inline-block; }
+    @keyframes ringPulse {
+      0%   { width: 200px; height: 200px; opacity: 0.6; }
+      100% { width: 340px; height: 340px; opacity: 0; }
+    }
+    .enter-btn {
+      margin-top: 16px;
+      background: linear-gradient(135deg, var(--accent), #0099cc);
+      color: #000;
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 3px;
+      padding: 14px 40px;
+      border: none;
+      border-radius: 40px;
+      cursor: pointer;
+      font-weight: 700;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 24px rgba(0,212,255,0.35);
+      animation: splashBtnIn 0.7s cubic-bezier(0.22,1,0.36,1) 0.9s both;
+      transition: box-shadow 0.3s, transform 0.3s;
+    }
+    .enter-btn:hover {
+      box-shadow: 0 0 40px rgba(0,212,255,0.6);
+      transform: scale(1.05);
+    }
+    @keyframes splashBtnIn {
+      from { opacity:0; transform: translateY(16px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="splash">
+  <div class="title">
+    <span class="title-glitch" data-text="NFA">NFA</span>
+    <span class="arrow">→</span>
+    <span class="title-glitch" data-text="DFA">DFA</span>
+  </div>
+
+  <div class="logo-wrapper">
+    <div class="logo-ring"></div>
+    <img src="images/fevicon-logo.png" class="logo" alt="Logo">
+  </div>
+
+  <p class="tagline">Visualizing Automata Transformations</p>
+
+  <div class="author">
+    <b>Shaurya Mittal</b>
+    2024UCS1740 &nbsp;·&nbsp; B.Tech CSE &nbsp;·&nbsp; NSUT
+  </div>
+
+  <button class="enter-btn" onclick="enterApp()">ENTER →</button>
+  <p class="splash-hint" id="splashHint"></p>
+</div>
+
+<script src="script.js"></script>
+<script>
+function enterApp() {
+  document.querySelector('.splash').classList.add('fade-out');
+  setTimeout(() => { location.href = 'homepage.html'; }, 900);
+}
+
+/* Typewriter on tagline */
+(function() {
+  const el = document.getElementById('splashHint');
+  const txt = 'DOUBLE CLICK TO ENTER  /  AUTO IN 10s';
+  let i = 0;
+  function type() {
+    if (i <= txt.length) {
+      el.textContent = txt.slice(0, i);
+      i++;
+      setTimeout(type, 55);
+    }
+  }
+  setTimeout(type, 1200);
+})();
+
+/* Double click shortcut */
+document.addEventListener('dblclick', enterApp);
+</script>
+</body>
+</html>

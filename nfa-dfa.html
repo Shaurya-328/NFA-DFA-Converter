@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFA → DFA Converter</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="shortcut icon" href="images/fevicon-logo.png" type="image/x-icon">
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+  <style>
+    /* ── Side-by-side graph layout ── */
+    .graph-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 0;
+      max-width: 1140px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .graph-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .graph-col h2 { text-align: center; margin-bottom: 8px; font-size: 16px; }
+    .graph-col .graph-box {
+      width: 100%;
+      min-height: 480px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg-card);
+      overflow: hidden;
+      position: relative;
+    }
+    .graph-box .placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      pointer-events: none;
+    }
+    .graph-arrow-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 18px;
+      padding-top: 52px;
+      flex-shrink: 0;
+    }
+    .graph-arrow-col .big-arrow { font-size: 30px; color: var(--accent3); }
+    .graph-arrow-col .arrow-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 6px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    @media (max-width: 720px) {
+      .graph-row { flex-direction: column; }
+      .graph-arrow-col { padding: 10px 0; transform: rotate(90deg); }
+    }
+
+    /* ── Step box ── */
+    .step-box {
+      max-width: 1140px;
+      margin: 14px auto 0;
+      padding: 13px 20px;
+      border-radius: 10px;
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      border-left: 4px solid var(--accent);
+      background: rgba(0,212,255,0.06);
+      color: var(--text);
+      min-height: 44px;
+      position: relative;
+      z-index: 1;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .step-box.highlight   { border-left-color: var(--accent3); background: rgba(245,158,11,0.08); }
+    .step-box.final-state { border-left-color: var(--green);   background: rgba(16,185,129,0.08); }
+    .step-box.done        { border-left-color: var(--green);   background: rgba(16,185,129,0.10); }
+    body.light .step-box  { background: rgba(0,119,204,0.05); color: #0f172a; }
+
+    /* ── Step controls ── */
+    .step-controls {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      max-width: 1140px;
+      margin: 14px auto 0;
+      position: relative;
+      z-index: 1;
+    }
+    .step-controls button {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 9px 18px;
+      font-size: 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+    .step-controls button:hover:not(:disabled) { border-color: var(--border-hover); color: var(--accent); }
+    .step-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .step-controls button#playBtn.playing {
+      background: linear-gradient(135deg, var(--accent2), #4f46e5);
+      color: #fff; border-color: var(--accent2);
+      box-shadow: 0 0 16px rgba(124,58,237,0.4);
+    }
+    #stepCounter {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px; color: var(--text-muted);
+      padding: 9px 14px; border: 1px solid var(--border);
+      border-radius: 8px; background: var(--bg-card);
+      white-space: nowrap;
+    }
+    .speed-row {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; color: var(--text-muted);
+    }
+    #speedSlider {
+      -webkit-appearance: none; width: 88px; height: 4px;
+      background: var(--border); border-radius: 2px; outline: none; cursor: pointer;
+    }
+    #speedSlider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 14px; height: 14px;
+      border-radius: 50%; background: var(--accent); cursor: pointer;
+    }
+
+    /* ── Legend ── */
+    .legend-row {
+      display: flex; justify-content: center; gap: 18px;
+      flex-wrap: wrap; max-width: 1140px;
+      margin: 10px auto 0; position: relative; z-index: 1;
+    }
+
+    /* ── Input mode tabs ── */
+    /* ── Tool animations ── */
+    .converter, .visualizer, .table-generator {
+      animation: panelSlideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    h1 { animation: headlineDrop 0.7s cubic-bezier(0.22,1,0.36,1) both; }
+    @keyframes headlineDrop {
+      from { opacity:0; transform:translateY(-20px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .converter > *, .visualizer > *, .table-generator > * {
+      animation: fieldSlideIn 0.5s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    .converter > *:nth-child(1){ animation-delay:0.05s; }
+    .converter > *:nth-child(2){ animation-delay:0.10s; }
+    .converter > *:nth-child(3){ animation-delay:0.15s; }
+    .converter > *:nth-child(4){ animation-delay:0.20s; }
+    .converter > *:nth-child(5){ animation-delay:0.25s; }
+    @keyframes fieldSlideIn {
+      from { opacity:0; transform:translateY(14px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    button:active { transform: scale(0.97) translateY(1px) !important; transition: transform 0.1s !important; }
+    #dfaTable tr:hover td { color: var(--accent) !important; }
+  </style>
+</head>
+<body>
+  <script src="theme.js"></script>
+
+  <h1>NFA → DFA Converter</h1>
+  <p class="intro5">Convert NFA to DFA using subset construction algorithm.</p>
+  <!-- MANUAL PANEL -->
+  <div class="converter">
+    <label for="states">States</label>
+    <input id="states" type="text" placeholder="e.g. q0,q1,q2">
+    <label for="alphabet">Alphabet</label>
+    <input id="alphabet" type="text" placeholder="e.g. 0,1">
+    <label for="start">Start State</label>
+    <input id="start" type="text" placeholder="e.g. q0">
+    <label for="final">Final States</label>
+    <input id="final" type="text" placeholder="e.g. q2">
+    <label for="transitions">Transitions
+      <span style="font-size:11px;color:#475569;font-family:monospace;">(one per line: q0,0=q0,q1)</span>
+    </label>
+    <textarea id="transitions" placeholder="q0,0=q0,q1&#10;q0,1=q0&#10;q1,1=q2"></textarea>
+    <button id="convertBtn">Convert to DFA</button>
+  </div>
+
+  <!-- ── Side-by-side graphs ── -->
+  <div class="section-label" style="max-width:1140px;margin:36px auto 16px;">
+    <h2>Automaton Graphs</h2>
+  </div>
+  <div class="graph-row">
+    <div class="graph-col">
+      <h2>NFA</h2>
+      <div id="nfaGraph" class="graph-box">
+        <div class="placeholder" id="nfaPlaceholder">⬡ &nbsp; NFA graph will appear here</div>
+      </div>
+    </div>
+    <div class="graph-arrow-col">
+      <div class="big-arrow">⟶</div>
+      <div class="arrow-label">Subset<br>Construction</div>
+    </div>
+    <div class="graph-col">
+      <h2>DFA <span style="font-size:12px;color:var(--text-muted);font-family:'Space Mono',monospace;">— builds live</span></h2>
+      <div id="dfaGraph" class="graph-box">
+        <div class="placeholder" id="dfaPlaceholder">⬡ &nbsp; DFA will build here step by step</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend-row">
+    <div class="legend-item"><div class="legend-dot start"></div>Start state</div>
+    <div class="legend-item"><div class="legend-dot both"></div>Start + Final</div>
+    <div class="legend-item"><div class="legend-dot final"></div>Final (accepting)</div>
+    <div class="legend-item"><div class="legend-dot dead"></div>Dead state (∅)</div>
+    <div class="legend-item"><div class="legend-dot active"></div>Processing</div>
+  </div>
+
+  <!-- Step description -->
+  <div class="step-box" id="stepBox" style="display:none;">—</div>
+
+  <!-- Step controls -->
+  <div class="step-controls" id="stepControls">
+    <button id="prevBtn" disabled>◀ Prev</button>
+    <button id="playBtn">▶ Play</button>
+    <button id="nextBtn">Next ▶</button>
+    <button id="showAllBtn">⏭ Show All</button>
+    <span id="stepCounter">Step — / —</span>
+    <div class="speed-row">
+      <span>Speed</span>
+      <input type="range" id="speedSlider" min="300" max="2000" value="900" step="100">
+      <span id="speedLabel">0.9s</span>
+    </div>
+  </div>
+
+  <!-- Export bar -->
+  <div class="export-bar">
+    <button class="export-btn" onclick="exportGraphPNG('nfaGraph','nfa-graph')">
+      <span class="eicon">🖼</span> Export NFA PNG
+    </button>
+    <button class="export-btn" onclick="exportGraphPNG('dfaGraph','dfa-graph')">
+      <span class="eicon">🖼</span> Export DFA PNG
+    </button>
+    <button class="export-btn" onclick="exportTableCSV('dfaTable','dfa-conversion-table')">
+      <span class="eicon">📥</span> Export Table CSV
+    </button>
+  </div>
+
+  <!-- DFA transition table -->
+  <div class="section-label"><h2>DFA Transition Table</h2></div>
+  <div id="dfaTable"></div>
+
+  <!-- String Simulator on DFA Graph -->
+  <div class="checker-panel" id="dfaChecker" style="display:none;">
+    <h3>🎮 String Simulator</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 14px;font-family:'Space Mono',monospace;">
+      Type a string and watch each character animate through the DFA graph step by step.
+    </p>
+    <div class="sim-input-row">
+      <input id="checkerInput" type="text" placeholder="Enter string (e.g. 001) — leave empty for ε">
+      <button id="checkBtn">▶ Load</button>
+    </div>
+
+    <!-- Token strip -->
+    <div id="simTokenRow" style="display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px;min-height:36px;"></div>
+
+    <!-- Step controls -->
+    <div class="sim-controls" id="simCtrlRow" style="display:none;">
+      <button id="simPrevBtn" disabled>◀ Prev</button>
+      <button id="simPlayBtn">▶ Play</button>
+      <button id="simNextBtn">Next ▶</button>
+      <button id="simResetBtn">↺ Reset</button>
+      <span id="simStepLabel" style="font-family:'Space Mono',monospace;font-size:12px;color:var(--text-muted);
+        padding:9px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);">—</span>
+      <div class="speed-row">
+        <span>Speed</span>
+        <input type="range" id="simSpeedSlider" min="200" max="1800" value="700" step="100"
+          style="-webkit-appearance:none;width:80px;height:4px;background:var(--border);border-radius:2px;outline:none;cursor:pointer;">
+      </div>
+    </div>
+
+    <!-- Current state display -->
+    <div id="simStateBox" style="display:none;margin:12px 0 0;padding:12px 18px;
+      border-radius:10px;font-family:'Space Mono',monospace;font-size:13px;
+      border-left:4px solid var(--accent);background:rgba(0,212,255,0.06);
+      color:var(--text);transition:border-color 0.3s,background 0.3s;min-height:44px;">
+    </div>
+
+    <!-- Path trace -->
+    <div class="path-display" id="pathDisplay" style="margin-top:12px;">
+      <span style="color:var(--text-muted);font-family:monospace;font-size:13px;">Path will appear here.</span>
+    </div>
+
+    <!-- Verdict -->
+    <div class="verdict" id="checkerVerdict"></div>
+  </div>
+
+  <!-- ── DFA Minimization Panel ── -->
+  <div class="minimize-panel" id="minimizePanel" style="display:none;">
+    <h3>⚡ DFA Minimization</h3>
+    <p class="minimize-desc">Minimize the converted DFA using <strong>Hopcroft's algorithm</strong> (table-filling / partition-refinement). Equivalent states are merged to produce the smallest possible DFA.</p>
+    <button id="minimizeBtn" class="minimize-run-btn">Minimize DFA</button>
+    <div id="minimizeResult" style="display:none;">
+      <div class="minimize-stats" id="minimizeStats"></div>
+      <div class="section-label" style="margin:22px 0 10px;"><h2>Minimized DFA Transition Table</h2></div>
+      <div id="minDfaTable"></div>
+      <div class="section-label" style="margin:22px 0 10px;"><h2>Minimized DFA Graph</h2></div>
+      <div id="minDfaGraph" class="graph-box" style="min-height:520px; width:100%; box-sizing:border-box;"></div>
+      <div class="export-bar" style="margin-top:18px;">
+        <button class="export-btn" onclick="exportGraphPNG('minDfaGraph','minimized-dfa-graph')">
+          <span class="eicon">🖼</span> Export Minimized DFA PNG
+        </button>
+        <button class="export-btn" onclick="exportTableCSV('minDfaTable','minimized-dfa-table')">
+          <span class="eicon">📥</span> Export Table CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <button onclick="(function(){document.body.style.transition='opacity 0.3s ease';document.body.style.opacity='0';setTimeout(function(){location.href='homepage.html';},300);})()">← Back to Home</button>
+
+  <!-- script.js MUST load before nfa-dfa.js -->
+  <script src="script.js"></script>
+  <script src="nfa-dfa.js"></script>
+
+  <script>
+    /* ── Show step box when step controls appear ── */
+    const _scObs = new MutationObserver(() => {
+      const sc = document.getElementById('stepControls');
+      const sb = document.getElementById('stepBox');
+      if (sc && sb && sc.style.display !== 'none') {
+        sb.style.display = 'block';
+        _scObs.disconnect();
+      }
+    });
+    _scObs.observe(document.getElementById('stepControls'),
+      { attributes: true, attributeFilter: ['style'] });
+
+    /* ── Hide placeholders after convert ── */
+    function hidePlaceholder(id) {
+      const ph = document.getElementById(id);
+      if (ph) ph.style.display = 'none';
+    }
+    document.getElementById('convertBtn').addEventListener('click', () => {
+      setTimeout(() => {
+        hidePlaceholder('nfaPlaceholder');
+        hidePlaceholder('dfaPlaceholder');
+      }, 100);
+    });
+  </script>
+
+  <script src="interactions.js"></script>
+  <script src="animations.js"></script>
+
+  <script>
+  /* ═══════════════════════════════════════════════════════════════
+     ANIMATED STRING SIMULATOR — highlights nodes on the DFA graph
+     as each character of the input string is processed.
+  ═══════════════════════════════════════════════════════════════ */
+
+  const _sim = {
+    steps: [],       // [{state, char, charIdx}]
+    idx: 0,
+    playing: false,
+    timer: null,
+    speedMs: 700,
+  };
+
+  /* Colours */
+  const C_ACTIVE   = '#00d4ff'; // cyan  — current state
+  const C_ACCEPTED = '#10b981'; // green — accepted
+  const C_REJECTED = '#ef4444'; // red   — rejected / dead
+  const C_VISITED  = '#7c3aed'; // purple — already visited
+
+  /* Highlight a node on the DFA graph */
+  function _simHighlight(stateId, color) {
+    if (!window._dfaNetwork || !stateId || stateId === '∅') return;
+    try {
+      window._dfaNetwork.body.data.nodes.update({
+        id: stateId,
+        color: {
+          background: color,
+          border: color,
+          highlight: { background: color, border: color },
+        },
+        font: { color: stateId ? '#ffffff' : undefined },
+      });
+    } catch(_) {}
+  }
+
+  /* Reset all node colours to their originals */
+  function _simResetColors() {
+    if (!window._dfaNetwork) return;
+    try {
+      const all = window._dfaNetwork.body.data.nodes.get();
+      all.forEach(n => {
+        window._dfaNetwork.body.data.nodes.update({
+          id: n.id,
+          color: n._origColor || n.color,
+          font: n._origFont || n.font,
+        });
+      });
+    } catch(_) {}
+  }
+
+  /* Save original colours once */
+  function _simSaveOrigColors() {
+    if (!window._dfaNetwork) return;
+    try {
+      const all = window._dfaNetwork.body.data.nodes.get();
+      all.forEach(n => {
+        if (!n._origColor) {
+          window._dfaNetwork.body.data.nodes.update({
+            id: n.id,
+            _origColor: JSON.parse(JSON.stringify(n.color || {})),
+            _origFont:  JSON.parse(JSON.stringify(n.font  || {})),
+          });
+        }
+      });
+    } catch(_) {}
+  }
+
+  /* Focus camera on the active node */
+  function _simFocusNode(stateId) {
+    if (!window._dfaNetwork || !stateId || stateId === '∅') return;
+    try {
+      window._dfaNetwork.focus(stateId, {
+        scale: 1.1,
+        animation: { duration: 400, easingFunction: 'easeInOutQuad' },
+      });
+    } catch(_) {}
+  }
+
+  /* Build the path trace HTML shown below */
+  function _simBuildPath() {
+    const trace = _sim.steps.slice(0, _sim.idx + 1);
+    const dfa = window._activeDFA;
+    return trace.map((step, i) => {
+      const isFinal = dfa && dfa.finals.includes(step.state);
+      const isDead  = !step.state || step.state === '∅';
+      const cls = isDead ? 'path-state dead' : isFinal ? 'path-state final' : 'path-state';
+      const highlighted = i === _sim.idx ? ' style="outline:2px solid var(--accent);outline-offset:2px;"' : '';
+      const arrow = i < trace.length - 1
+        ? `<span class="path-arrow"> –${trace[i+1].char}→ </span>` : '';
+      return `<span class="${cls}"${highlighted}>${step.state || '∅'}</span>${arrow}`;
+    }).join('');
+  }
+
+  /* Update token strip — mark chars done / active / pending */
+  function _simUpdateTokens() {
+    const row = document.getElementById('simTokenRow');
+    if (!row) return;
+    [...row.querySelectorAll('.token')].forEach((tok, i) => {
+      tok.className = 'token';
+      const charIdx = i; // token i corresponds to step i+1 (step 0 is start, no char)
+      if (charIdx < _sim.idx - 1) tok.classList.add('done');
+      else if (charIdx === _sim.idx - 1) tok.classList.add('active');
+    });
+  }
+
+  /* Update the state info box */
+  function _simUpdateStateBox(step, prevStep) {
+    const box = document.getElementById('simStateBox');
+    if (!box) return;
+    box.style.display = '';
+    if (_sim.idx === 0) {
+      box.style.borderLeftColor = 'var(--accent)';
+      box.style.background = 'rgba(0,212,255,0.06)';
+      box.innerHTML = `🚀 Start state: <b style="color:var(--accent)">${step.state}</b>`;
+    } else if (!step.state || step.state === '∅') {
+      box.style.borderLeftColor = 'var(--red)';
+      box.style.background = 'rgba(239,68,68,0.08)';
+      box.innerHTML = `💀 No transition for <b style="color:var(--accent)">"${step.char}"</b> from <b>${prevStep.state}</b> → dead state`;
+    } else {
+      box.style.borderLeftColor = 'var(--accent)';
+      box.style.background = 'rgba(0,212,255,0.06)';
+      box.innerHTML = `Read <b style="color:var(--accent)">"${step.char}"</b> &nbsp;·&nbsp; `
+        + `<b>${prevStep.state}</b> <span style="color:var(--accent3)">→</span> <b style="color:var(--accent)">${step.state}</b>`;
+    }
+  }
+
+  /* Update step counter label */
+  function _simUpdateCounter() {
+    const el = document.getElementById('simStepLabel');
+    if (el) el.textContent = `Step ${_sim.idx} / ${_sim.steps.length - 1}`;
+  }
+
+  /* Update button disabled states */
+  function _simUpdateBtns() {
+    const atEnd = _sim.idx >= _sim.steps.length - 1 || !(_sim.steps[_sim.idx]?.state);
+    document.getElementById('simPrevBtn').disabled = _sim.idx === 0;
+    document.getElementById('simNextBtn').disabled = atEnd;
+  }
+
+  /* Full render of current step */
+  function _simRender() {
+    const step = _sim.steps[_sim.idx];
+    const prevStep = _sim.idx > 0 ? _sim.steps[_sim.idx - 1] : null;
+    const dfa = window._activeDFA;
+    const atEnd = _sim.idx >= _sim.steps.length - 1 || !step.state;
+
+    _simResetColors();
+
+    // Colour already-visited states
+    for (let i = 0; i < _sim.idx; i++) {
+      const s = _sim.steps[i].state;
+      if (s && s !== '∅') _simHighlight(s, C_VISITED);
+    }
+    // Colour current state
+    if (atEnd) {
+      const accepted = step.state && dfa && dfa.finals.includes(step.state);
+      _simHighlight(step.state, accepted ? C_ACCEPTED : C_REJECTED);
+    } else {
+      _simHighlight(step.state, C_ACTIVE);
+    }
+    _simFocusNode(step.state);
+
+    _simUpdateTokens();
+    _simUpdateStateBox(step, prevStep);
+    _simUpdateCounter();
+    _simUpdateBtns();
+
+    // Path trace
+    document.getElementById('pathDisplay').innerHTML = _simBuildPath();
+
+    // Final verdict only at last step
+    const verd = document.getElementById('checkerVerdict');
+    if (atEnd) {
+      const accepted = step.state && dfa && dfa.finals.includes(step.state);
+      verd.style.display = 'block';
+      verd.className = accepted ? 'verdict accepted' : 'verdict rejected';
+      const str = _sim.steps.slice(1).map(s => s.char).join('') || 'ε';
+      verd.innerHTML = accepted
+        ? `✅ ACCEPTED &nbsp;·&nbsp; <b>"${str}"</b> is in the language`
+        : `❌ REJECTED &nbsp;·&nbsp; <b>"${str}"</b> is NOT in the language`;
+      verd.style.animation = 'verdictBounce 0.4s cubic-bezier(0.34,1.56,0.64,1) both';
+      // Stop auto-play if running
+      if (_sim.playing) _simTogglePlay();
+    } else {
+      verd.style.display = 'none';
+    }
+  }
+
+  /* Load string and build steps */
+  function dfaSimLoad() {
+    const dfa = window._activeDFA;
+    if (!dfa) return;
+    const str = document.getElementById('checkerInput').value || '';
+
+    _simSaveOrigColors();
+    _simResetColors();
+
+    // Build steps: step 0 = start (no char consumed), step i = after reading char i-1
+    _sim.steps = [{ state: dfa.start, char: null, charIdx: -1 }];
+    let cur = dfa.start;
+    for (let i = 0; i < str.length; i++) {
+      const ch = str[i];
+      const nxt = (dfa.trans[cur] || {})[ch] || null;
+      cur = nxt;
+      _sim.steps.push({ state: cur, char: ch, charIdx: i });
+      if (!cur) break; // dead — stop
+    }
+    _sim.idx = 0;
+
+    // Build token strip
+    const row = document.getElementById('simTokenRow');
+    row.innerHTML = str.length
+      ? [...str].map((ch, i) => `<span class="token" id="simTok_${i}">${ch}</span>`).join('')
+      : `<span class="token active">ε</span>`;
+
+    // Show controls
+    document.getElementById('simCtrlRow').style.display = 'flex';
+    document.getElementById('checkerVerdict').style.display = 'none';
+    document.getElementById('checkerVerdict').innerHTML = '';
+
+    // If empty string, jump straight to verdict
+    if (str.length === 0) {
+      _sim.idx = 0;
+      _simRender();
+      return;
+    }
+
+    _simRender();
+  }
+
+  /* Step forward / backward */
+  function _simStep(dir) {
+    const newIdx = _sim.idx + dir;
+    if (newIdx < 0 || newIdx >= _sim.steps.length) return;
+    if (!_sim.steps[_sim.idx].state && dir > 0) return; // already dead
+    _sim.idx = newIdx;
+    _simRender();
+  }
+
+  /* Toggle auto-play */
+  function _simTogglePlay() {
+    _sim.playing = !_sim.playing;
+    const btn = document.getElementById('simPlayBtn');
+    if (_sim.playing) {
+      btn.textContent = '⏸ Pause';
+      btn.style.background = 'linear-gradient(135deg,var(--accent2),#4f46e5)';
+      btn.style.color = '#fff';
+      btn.style.borderColor = 'var(--accent2)';
+      _sim.timer = setInterval(() => {
+        const atEnd = _sim.idx >= _sim.steps.length - 1 || !_sim.steps[_sim.idx].state;
+        if (atEnd) { _simTogglePlay(); return; }
+        _simStep(1);
+      }, _sim.speedMs);
+    } else {
+      clearInterval(_sim.timer);
+      btn.textContent = '▶ Play';
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }
+  }
+
+  /* Reset */
+  function _simResetAll() {
+    clearInterval(_sim.timer);
+    _sim.playing = false;
+    _sim.steps = [];
+    _sim.idx = 0;
+    _simResetColors();
+    document.getElementById('simTokenRow').innerHTML = '';
+    document.getElementById('simCtrlRow').style.display = 'none';
+    document.getElementById('simStateBox').style.display = 'none';
+    document.getElementById('pathDisplay').innerHTML =
+      '<span style="color:var(--text-muted);font-family:monospace;font-size:13px;">Path will appear here.</span>';
+    document.getElementById('checkerVerdict').style.display = 'none';
+    const btn = document.getElementById('simPlayBtn');
+    btn.textContent = '▶ Play'; btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = '';
+    if (window._dfaNetwork) window._dfaNetwork.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
+  }
+
+  /* Wire up controls */
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('simPrevBtn').addEventListener('click',  () => _simStep(-1));
+    document.getElementById('simNextBtn').addEventListener('click',  () => _simStep(1));
+    document.getElementById('simPlayBtn').addEventListener('click',  _simTogglePlay);
+    document.getElementById('simResetBtn').addEventListener('click', _simResetAll);
+    document.getElementById('checkerInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') dfaSimLoad();
+    });
+    document.getElementById('simSpeedSlider').addEventListener('input', e => {
+      _sim.speedMs = parseInt(e.target.value);
+    });
+  });
+  </script>
+
+</body>
+</html>

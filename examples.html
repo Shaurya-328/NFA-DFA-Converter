@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFA → DFA Examples</title>
+  <link rel="shortcut icon" href="images/fevicon-logo.png" type="image/x-icon">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .example-card {
+      position: relative;
+      opacity: 0;
+      transform: translateY(24px) scale(0.97);
+      transition: opacity 0.5s cubic-bezier(0.22,1,0.36,1),
+                  transform 0.5s cubic-bezier(0.22,1,0.36,1),
+                  box-shadow 0.4s ease,
+                  border-color 0.35s ease;
+    }
+    .example-card.show { opacity: 1; transform: translateY(0) scale(1); }
+    .example-card:hover { transform: translateY(-6px) scale(1.02) !important; }
+
+    /* Tag chips */
+    .ex-tag {
+      display: inline-block;
+      background: rgba(0,212,255,0.08);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      margin: 6px 4px 0 0;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .ex-tag:hover { background: rgba(0,212,255,0.18); transform: scale(1.06); }
+
+    /* Float back button */
+    .float-back {
+      position: fixed;
+      bottom: 32px; left: 32px;
+      z-index: 100;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: 40px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      transform: translateX(-20px);
+      animation: floatIn 0.5s ease-out 0.8s forwards;
+      transition: border-color 0.3s, color 0.3s, box-shadow 0.3s, transform 0.3s !important;
+    }
+    .float-back:hover {
+      border-color: var(--border-hover);
+      color: var(--accent);
+      box-shadow: var(--glow);
+      transform: translateX(-5px) !important;
+    }
+    @keyframes floatIn { to { opacity: 1; transform: translateX(0); } }
+  </style>
+</head>
+<body>
+  <script src="theme.js"></script>
+  <!-- Single fixed floating back button -->
+  <button class="float-back" onclick="goBack()">← Home</button>
+
+  <h1>NFA → DFA Examples</h1>
+  <p class="intro">Click any example to run it in the NFA → DFA Converter</p>
+
+  <div class="examples">
+
+    <div class="example-card">
+      <h2>Example 1 — Simple 2-State NFA</h2>
+      <p>States: <span>{q0, q1}</span></p>
+      <p>Alphabet: <span>{0, 1}</span></p>
+      <p>Transitions: <span>q0 → q1 on 0</span></p>
+      <p>Start: <span>q0</span> &nbsp;·&nbsp; Final: <span>q1</span></p>
+      <div><span class="ex-tag">2 STATES</span><span class="ex-tag">BINARY</span></div>
+      <button onclick="goTo('nfa-dfa.html?example=1')">Run Example →</button>
+    </div>
+
+    <div class="example-card">
+      <h2>Example 2 — 3-State NFA over {a, b}</h2>
+      <p>States: <span>{q0, q1, q2}</span></p>
+      <p>Alphabet: <span>{a, b}</span></p>
+      <p>Transitions: <span>q0 → {q0,q1} on a, q1 → q2 on b</span></p>
+      <p>Start: <span>q0</span> &nbsp;·&nbsp; Final: <span>q2</span></p>
+      <div><span class="ex-tag">3 STATES</span><span class="ex-tag">NON-DET</span></div>
+      <button onclick="goTo('nfa-dfa.html?example=2')">Run Example →</button>
+    </div>
+
+    <div class="example-card">
+      <h2>Example 3 — NFA with Multiple Final States</h2>
+      <p>States: <span>{q0, q1, q2, q3}</span></p>
+      <p>Alphabet: <span>{0, 1}</span></p>
+      <p>Transitions: <span>Multiple NFA transitions</span></p>
+      <p>Start: <span>q0</span> &nbsp;·&nbsp; Final: <span>{q1, q3}</span></p>
+      <div><span class="ex-tag">4 STATES</span><span class="ex-tag">MULTI-FINAL</span></div>
+      <button onclick="goTo('nfa-dfa.html?example=3')">Run Example →</button>
+    </div>
+
+    <div class="example-card">
+      <h2>Example 4 — Strings ending in 01</h2>
+      <p>States: <span>{q0, q1, q2}</span></p>
+      <p>Alphabet: <span>{0, 1}</span></p>
+      <p>Language: <span>Strings over {0,1} ending in "01"</span></p>
+      <p>Start: <span>q0</span> &nbsp;·&nbsp; Final: <span>q2</span></p>
+      <div><span class="ex-tag">SUFFIX</span><span class="ex-tag">PATTERN</span></div>
+      <button onclick="goTo('nfa-dfa.html?example=4')">Run Example →</button>
+    </div>
+
+    <div class="example-card">
+      <h2>Example 5 — Complex NFA to DFA</h2>
+      <p>States: <span>{q0, q1, q2, q3}</span></p>
+      <p>Alphabet: <span>{a, b}</span></p>
+      <p>Language: <span>Strings containing "ab" as a substring</span></p>
+      <p>Start: <span>q0</span> &nbsp;·&nbsp; Final: <span>q3</span></p>
+      <div><span class="ex-tag">SUBSTRING</span><span class="ex-tag">COMPLEX</span></div>
+      <button onclick="goTo('nfa-dfa.html?example=5')">Run Example →</button>
+    </div>
+
+  </div>
+
+  <div style="height: 80px;"></div>
+
+  <script>
+    document.body.style.opacity = '0';
+    requestAnimationFrame(() => {
+      document.body.style.transition = 'opacity 0.4s ease';
+      document.body.style.opacity = '1';
+    });
+
+    function goBack() {
+      document.body.style.transition = 'opacity 0.3s ease';
+      document.body.style.opacity = '0';
+      setTimeout(() => { location.href = 'homepage.html'; }, 300);
+    }
+    function goTo(url) {
+      document.body.style.transition = 'opacity 0.3s ease';
+      document.body.style.opacity = '0';
+      setTimeout(() => { location.href = url; }, 300);
+    }
+
+    /* Stagger card entrance */
+    document.querySelectorAll('.example-card').forEach((card, i) => {
+      setTimeout(() => card.classList.add('show'), 100 + i * 100);
+    });
+
+    /* 3D tilt on hover */
+    document.querySelectorAll('.example-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width  - 0.5;
+        const y = (e.clientY - r.top)  / r.height - 0.5;
+        card.style.transform = `translateY(-6px) scale(1.02) rotateX(${-y*6}deg) rotateY(${x*6}deg)`;
+        card.style.transition = 'transform 0.1s ease, box-shadow 0.3s, border-color 0.3s';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = '';
+        card.style.transition = 'transform 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.5s, box-shadow 0.4s, border-color 0.35s';
+      });
+    });
+  </script>
+</body>
+</html>

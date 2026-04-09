@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Theory — Automata Toolkit</title>
+  <link rel="shortcut icon" href="images/fevicon-logo.png" type="image/x-icon">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Reading progress bar */
+    .read-progress {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%;
+      z-index: 999;
+      transition: width 0.1s linear;
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    /* Scroll-reveal base */
+    .sr {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1),
+                  transform 0.7s cubic-bezier(0.22,1,0.36,1);
+    }
+    .sr.in { opacity: 1; transform: translateY(0); }
+    .sr-left  { opacity:0; transform:translateX(-32px); transition:opacity 0.7s cubic-bezier(0.22,1,0.36,1),transform 0.7s cubic-bezier(0.22,1,0.36,1); }
+    .sr-left.in { opacity:1; transform:translateX(0); }
+
+    /* h2 animated accent bar */
+    .theory h2 {
+      padding-left: 20px;
+      position: relative;
+    }
+    .theory h2::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 0%;
+      background: var(--accent);
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(0,212,255,0.6);
+      transition: height 0.5s cubic-bezier(0.22,1,0.36,1);
+    }
+    .theory h2.in::before { height: 100%; }
+
+    /* Formula box */
+    .formula-box {
+      cursor: help;
+      position: relative;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: formulaPulse 3s ease-in-out infinite;
+    }
+    .formula-box:hover {
+      transform: scale(1.03);
+      box-shadow: 0 0 30px rgba(0,212,255,0.4) !important;
+    }
+    @keyframes formulaPulse {
+      0%,100% { box-shadow: 0 0 12px rgba(0,212,255,0.15); }
+      50%      { box-shadow: 0 0 24px rgba(0,212,255,0.35); }
+    }
+    .formula-tip {
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%) translateY(6px);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: 'Space Mono', monospace;
+      color: var(--text-muted);
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .formula-box:hover .formula-tip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* List items stagger */
+    .theory ul li, .theory ol li {
+      opacity: 0;
+      transform: translateX(-14px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .theory ul.in li, .theory ol.in li { opacity: 1; transform: translateX(0); }
+    .theory ul.in li:nth-child(1),.theory ol.in li:nth-child(1){ transition-delay:.05s; }
+    .theory ul.in li:nth-child(2),.theory ol.in li:nth-child(2){ transition-delay:.12s; }
+    .theory ul.in li:nth-child(3),.theory ol.in li:nth-child(3){ transition-delay:.19s; }
+    .theory ul.in li:nth-child(4),.theory ol.in li:nth-child(4){ transition-delay:.26s; }
+    .theory ul.in li:nth-child(5),.theory ol.in li:nth-child(5){ transition-delay:.33s; }
+    .theory ol.in li:nth-child(6){ transition-delay:.40s; }
+
+    /* Tooltip on formula */
+    .formula-box { display: block; }
+
+    /* Float back button */
+    .float-back {
+      position: fixed;
+      bottom: 32px; left: 32px;
+      z-index: 100;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: 40px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      transform: translateX(-20px);
+      animation: floatIn 0.5s ease-out 0.9s forwards;
+      transition: border-color 0.3s, color 0.3s, box-shadow 0.3s, transform 0.3s !important;
+    }
+    .float-back:hover {
+      border-color: var(--border-hover);
+      color: var(--accent);
+      box-shadow: var(--glow);
+      transform: translateX(-5px) !important;
+    }
+    @keyframes floatIn { to { opacity: 1; transform: translateX(0); } }
+  </style>
+</head>
+<body>
+  <script src="theme.js"></script>
+  <div class="read-progress" id="readProgress"></div>
+  <button class="float-back" onclick="goBack()">← Home</button>
+
+  <h1 class="sr">Automata Theory</h1>
+  <p class="intro sr" style="transition-delay:.12s">Foundations of Finite Automata and Formal Languages</p>
+
+  <div class="theory">
+
+    <h2 class="sr">What is Automata Theory?</h2>
+    <p class="sr">
+      Automata theory studies abstract machines and the computational problems they can solve.
+      The most fundamental machines are <strong>Finite Automata</strong>, used to recognize
+      patterns and regular languages. They form the theoretical foundation for compilers,
+      lexical analysers, pattern matching, and network protocols.
+    </p>
+
+    <h2 class="sr">Deterministic Finite Automaton (DFA)</h2>
+    <p class="sr">
+      A DFA is a finite state machine where for every state and input symbol there is
+      <em>exactly one</em> transition to a next state. The machine deterministically
+      decides whether to accept or reject a string.
+    </p>
+
+    <h3 class="sr-left">Formal Definition</h3>
+    <ul class="sr">
+      <li><b>Q</b> — Finite set of states</li>
+      <li><b>Σ (Sigma)</b> — Finite input alphabet</li>
+      <li><b>δ (Delta)</b> — Transition function: Q × Σ → Q</li>
+      <li><b>q₀</b> — Start state (q₀ ∈ Q)</li>
+      <li><b>F</b> — Set of accepting (final) states (F ⊆ Q)</li>
+    </ul>
+
+    <div class="formula-box sr">DFA = ( Q, Σ, δ, q₀, F )
+      <span class="formula-tip">5-tuple formal definition</span>
+    </div>
+
+    <p class="sr">
+      A DFA <strong>accepts</strong> a string if, starting from q₀, processing every input
+      symbol leads to a state in F. Otherwise it rejects.
+    </p>
+
+    <h2 class="sr">Non-Deterministic Finite Automaton (NFA)</h2>
+    <p class="sr">
+      An NFA is a finite automaton where multiple transitions may exist for the same
+      state and input symbol, and ε (epsilon) transitions — transitions on empty string —
+      may also be present. NFAs are equally powerful to DFAs but often simpler to design.
+    </p>
+
+    <h3 class="sr-left">Formal Definition</h3>
+    <ul class="sr">
+      <li><b>Q</b> — Finite set of states</li>
+      <li><b>Σ</b> — Finite input alphabet</li>
+      <li><b>δ</b> — Transition function: Q × (Σ ∪ {ε}) → 2^Q</li>
+      <li><b>q₀</b> — Start state</li>
+      <li><b>F</b> — Set of accepting states</li>
+    </ul>
+
+    <div class="formula-box sr">NFA = ( Q, Σ, δ, q₀, F )
+      <span class="formula-tip">Same structure — different δ behaviour</span>
+    </div>
+
+    <p class="sr">
+      An NFA <strong>accepts</strong> a string if <em>at least one</em> possible
+      computation path leads to an accepting state.
+    </p>
+
+    <h2 class="sr">NFA → DFA Conversion (Subset Construction)</h2>
+    <p class="sr">
+      Every NFA can be converted to an equivalent DFA using the <strong>Subset Construction
+      (Powerset) Algorithm</strong>. Each state of the resulting DFA represents a
+      <em>set of NFA states</em>.
+    </p>
+
+    <h3 class="sr-left">Algorithm Steps</h3>
+    <ol class="sr">
+      <li>Start with the ε-closure of the NFA's initial state — this becomes the DFA start state.</li>
+      <li>For each DFA state (a set of NFA states) and each input symbol, compute the set of reachable NFA states.</li>
+      <li>Take the ε-closure of that reachable set — this forms a new DFA state.</li>
+      <li>Add this new state to the DFA if it hasn't been seen before.</li>
+      <li>Repeat steps 2–4 until no new DFA states are generated.</li>
+      <li>Any DFA state containing at least one NFA accepting state becomes a DFA accepting state.</li>
+    </ol>
+
+    <p class="sr">
+      The resulting DFA may have up to 2<sup>n</sup> states (where n is the number of NFA states),
+      though in practice far fewer states usually appear.
+    </p>
+
+    <button class="sr" onclick="goTo('examples.html')" style="margin-top:20px">
+      View Conversion Examples →
+    </button>
+
+  </div>
+
+  <!-- Only ONE back button -->
+  <div style="height:80px;"></div>
+
+  <script>
+    /* Page fade-in */
+    document.body.style.opacity = '0';
+    requestAnimationFrame(() => {
+      document.body.style.transition = 'opacity 0.4s ease';
+      document.body.style.opacity = '1';
+    });
+
+    function goBack() {
+      document.body.style.transition = 'opacity 0.3s ease';
+      document.body.style.opacity = '0';
+      setTimeout(() => { location.href = 'homepage.html'; }, 300);
+    }
+    function goTo(url) {
+      document.body.style.transition = 'opacity 0.3s ease';
+      document.body.style.opacity = '0';
+      setTimeout(() => { location.href = url; }, 300);
+    }
+
+    /* Reading progress */
+    window.addEventListener('scroll', () => {
+      const el = document.documentElement;
+      const pct = el.scrollTop / (el.scrollHeight - el.clientHeight) * 100;
+      document.getElementById('readProgress').style.width = pct + '%';
+    });
+
+    /* IntersectionObserver — fires for every .sr, .sr-left, h2, ul, ol */
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll(
+      '.theory h2, .theory h3, .theory p, .theory ul, .theory ol, .theory .formula-box, .theory button, h1, .intro'
+    ).forEach(el => {
+      if (!el.classList.contains('sr') && !el.classList.contains('sr-left')) {
+        el.classList.add('sr');
+      }
+      io.observe(el);
+    });
+    /* Also observe already-classed elements */
+    document.querySelectorAll('.sr, .sr-left').forEach(el => io.observe(el));
+  </script>
+</body>
+</html>

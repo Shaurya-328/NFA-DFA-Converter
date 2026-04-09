@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DFA Visualizer</title>
+  <link rel="shortcut icon" href="images/fevicon-logo.png" type="image/x-icon">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    /* Tool-page animation enhancements */
+    .converter, .visualizer, .table-generator {
+      animation: panelSlideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    h1 { animation: headlineDrop 0.7s cubic-bezier(0.22,1,0.36,1) both; }
+    @keyframes headlineDrop {
+      from { opacity:0; transform:translateY(-20px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .graph-box, #graphArea { position: relative; }
+button:active { transform: scale(0.97) translateY(1px) !important; transition: transform 0.1s !important; }
+    #tableArea tr:hover td, #dfaTable tr:hover td { color: var(--accent) !important; }
+    /* Stagger form fields */
+    .converter > *, .visualizer > *, .table-generator > * {
+      animation: fieldSlideIn 0.5s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    .converter > *:nth-child(1),.visualizer > *:nth-child(1),.table-generator > *:nth-child(1){ animation-delay:0.05s; }
+    .converter > *:nth-child(2),.visualizer > *:nth-child(2),.table-generator > *:nth-child(2){ animation-delay:0.10s; }
+    .converter > *:nth-child(3),.visualizer > *:nth-child(3),.table-generator > *:nth-child(3){ animation-delay:0.15s; }
+    .converter > *:nth-child(4),.visualizer > *:nth-child(4),.table-generator > *:nth-child(4){ animation-delay:0.20s; }
+    .converter > *:nth-child(5),.visualizer > *:nth-child(5),.table-generator > *:nth-child(5){ animation-delay:0.25s; }
+    @keyframes fieldSlideIn {
+      from { opacity:0; transform:translateY(14px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <script src="theme.js"></script>
+
+  <h1>DFA Visualizer</h1>
+  <p class="intro3">Enter DFA details to visualize and simulate.</p>
+  <p id="errorMsg" style="display:none;"></p>
+
+  <div class="visualizer">
+    <label for="states">States</label>
+    <input id="states" type="text" placeholder="e.g. q0,q1,q2">
+    <label for="alphabet">Alphabet</label>
+    <input id="alphabet" type="text" placeholder="e.g. 0,1">
+    <label for="start">Start State</label>
+    <input id="start" type="text" placeholder="e.g. q0">
+    <label for="final">Final States</label>
+    <input id="final" type="text" placeholder="e.g. q2">
+    <label for="transitions">Transitions
+      <span style="font-size:11px;color:#475569;font-family:monospace;">(one per line: q0,0=q1)</span>
+    </label>
+    <textarea id="transitions" placeholder="q0,0=q1&#10;q0,1=q0&#10;q1,0=q1&#10;q1,1=q2"></textarea>
+    <button id="visualizeDfaBtn">Visualize DFA</button>
+  </div>
+
+  <div class="section-label"><h2>Automaton Graph</h2></div>
+  <div id="graphArea"><p>DFA graph will appear here</p></div>
+
+  <div class="export-bar">
+    <button class="export-btn" onclick="exportGraphPNG('graphArea','dfa-graph')">
+      <span class="eicon">🖼</span> Export PNG
+    </button>
+  </div>
+
+  <!-- String Simulator -->
+  <div class="sim-panel" id="simPanel" style="display:none;">
+    <h3>🎮 String Simulator</h3>
+    <div class="sim-input-row">
+      <input id="simInput" type="text" placeholder="Enter string to simulate (e.g. 001)">
+      <button id="simStartBtn">Load</button>
+    </div>
+    <div class="token-row" id="tokenRow"></div>
+    <div class="sim-controls">
+      <button id="simNext" disabled>⏭ Next Step</button>
+      <button id="simPlay" disabled>▶ Play</button>
+      <button id="simReset" disabled>↺ Reset</button>
+    </div>
+    <div class="sim-state-display" id="simStateDisplay">Load a string to begin simulation.</div>
+    <div class="verdict" id="simVerdict"></div>
+  </div>
+
+  <!-- String Checker -->
+  <div class="checker-panel">
+    <h3>✅ String Acceptance Checker</h3>
+    <div class="sim-input-row">
+      <input id="checkerInput" type="text" placeholder="Enter string to check (leave empty for ε)">
+      <button id="checkBtn">Check</button>
+    </div>
+    <div class="path-display" id="pathDisplay">
+      <span style="color:var(--text-muted);font-family:monospace;font-size:13px;">Path will appear here after checking.</span>
+    </div>
+    <div class="verdict" id="checkerVerdict"></div>
+  </div>
+
+  <button onclick="(function(){document.body.style.transition='opacity 0.3s ease';document.body.style.opacity='0';setTimeout(function(){location.href='homepage.html';},300);})()">← Back to Home</button>
+
+  <script src="script.js"></script>
+  <script src="interactions.js"></script>
+<script src="animations.js"></script>
+</body>
+</html>
